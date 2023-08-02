@@ -1,0 +1,6 @@
+﻿configure_file ("Idle_Skeleton_Ranged.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Walk_Skeleton_Ranged.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Shot_1_Skeleton_Ranged.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Dead_Skeleton_Ranged.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Hurt_Skeleton_Ranged.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Weapon_Arrow.png" ${CMAKE_BINARY_DIR} COPYONLY)

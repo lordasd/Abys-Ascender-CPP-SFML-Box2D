@@ -1,0 +1,5 @@
+﻿configure_file ("Idle_Skeleton_Melee.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Walk_Skeleton_Melee.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Attack_1_Skeleton_Melee.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Dead_Skeleton_Melee.png" ${CMAKE_BINARY_DIR} COPYONLY)
+configure_file ("Hurt_Skeleton_Melee.png" ${CMAKE_BINARY_DIR} COPYONLY)

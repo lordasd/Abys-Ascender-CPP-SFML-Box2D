@@ -1,0 +1,518 @@
+@startuml
+
+class GameController
+{
+  +GameController();
+	+void run();
+	
+	-Window m_window;
+	-sf::RenderWindow& m_renderWindow;
+	-sf::View m_cameraView;
+	-std::stack<std::unique_ptr<GameState>> m_stateStack;
+	-std::stack<GameStateID> m_prevStateID;
+	-GameStateID m_currStateID;
+	-bool m_stateChanged = false;
+	-bool m_levelLoadRequest = false;
+	-sf::Clock m_clock;
+
+	void handleInput();
+	void update(float deltaTime);
+	void render(sf::RenderWindow& window);
+	void pushState(std::unique_ptr<GameState> state);
+	void popState();
+	void clearStateChangeRequest();
+	void checkForLoadLevel();
+}
+
+class Window
+{
+  +Window();
+	+sf::RenderWindow& getRenderedWindow();
+	
+	-sf::RenderWindow m_renderWindow;
+}
+
+class Ui
+{
+  +Ui(const sf::View& view);
+	+void update(float deltaTime, size_t healthAmount);
+	+void render(sf::RenderWindow& window);
+	+void setLevel(size_t level);
+	
+	-sf::Sprite m_hp;
+	-sf::Sprite m_heart;
+	-sf::Sprite m_emptyHeart;
+	-std::vector<sf::Sprite> m_health;
+	-size_t m_hpAmount{ 4 };
+	-sf::Font m_font;
+	-sf::Text m_level;
+	-const sf::View& m_view;
+	-void setSpritePositions(sf::RenderWindow& window);
+}
+
+class Animation
+{
+  +Animation() = default;
+	+Animation(const std::vector<sf::Sprite>& animation, float frameDuration, float yOffset);
+	+void update(float deltaTime);
+	+void render(sf::RenderWindow& window) const;
+	+void setAnimationBody(const b2Body* body);
+	+void setAnimation(const std::vector<sf::Sprite>& animation, float interval, const Operation& operation, const Direction& direction);
+	+int animationID(const AnimationType& type) const;
+	+bool isLookingRight() const;
+	
+	-std::vector<sf::Sprite> m_frames;
+...
+}
+
+class TextureManager
+{
+  +static TextureManager& instance();
+	+~TextureManager() = default;
+	+TextureManager(const TextureManager&) = delete;
+	+void operator=(const TextureManager&) = delete;
+
+	+const sf::Sprite& getTile(size_t id) const;
+	+const std::vector<sf::Sprite>& getAdventurerAnimation(int id) const;
+	+const std::vector<sf::Sprite>& getSkeletonMeleeAnimation(int id) const;
+	+const std::vector<sf::Sprite>& getSkeletonRangedAnimation(int id) const;
+	+const sf::Sprite& getWeaponArrow() const;
+	+const sf::Texture& getLevel1Bg() const;
+	...
+}
+
+class SoundManager
+{
+  +static SoundManager& instance();
+	+~SoundManager() = default;
+	+SoundManager(const SoundManager&) = delete;
+	+void operator=(const SoundManager&) = delete;
+
+	+float getSoundFxVol() const;
+	+void muteUnmuteSoundFx();
+	.
+	.
+	. and more...
+}
+
+class GameState
+{
+    +GameState() = default;
+    +virtual ~GameState() = default;
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) = 0;
+    +virtual void update(float deltaTime) = 0;
+    +virtual void render(sf::RenderWindow& window) = 0;
+    +virtual void pause() = 0;
+    +virtual void resume() = 0;
+    +virtual void exit() = 0;
+...
+}
+
+class MainMenuState
+{
+  +MainMenuState();
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) override;
+    +virtual void update(float deltaTime) override;
+    +virtual void render(sf::RenderWindow& window) override;
+    +virtual void pause() override;
+    +virtual void resume() override;
+    +virtual void exit() override;
+    
+    -MenuState m_state = MenuState::Main;
+    -std::vector<MainMenuButton> m_buttons;
+    -sf::Sprite m_menuBackground;
+    -sf::Sprite m_helpMenu;
+...
+}
+
+class MainMenuButton
+{
+  +MainMenuButton(size_t buttonNum, const sf::Vector2f& buttonPos);
+	+void handleInput(const sf::Vector2f& mousePos);
+	+void update(float);
+	+void render(sf::RenderWindow& window) const;
+	+ButtonType getType() const;
+	+bool isClicked() const;
+	
+	-sf::Sprite m_sprite;
+	-ButtonType m_type = ButtonType::None;
+	-bool m_clicked = false;
+}
+
+class GameplayState
+{
+  +GameplayState(bool loadLevel, sf::RenderWindow& w);
+
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) override;
+    +virtual void update(float deltaTime) override;
+    +virtual void render(sf::RenderWindow& window) override;
+    +virtual void pause() override;
+    +virtual void resume() override;
+    +virtual void exit() override;
+    
+    -std::unique_ptr<b2World> m_world;
+    -ContactListener m_contactListener;
+    -DebugDraw debugDraw;
+
+    -Ui m_ui;
+
+    // Objects
+    -Objects m_objects;
+    -Objects m_chainedObjects;
+    -Objects m_movingPlatforms;
+...
+}
+
+class SettingsState
+{
+  +SettingsState();
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) override;
+    +virtual void update(float) override;
+    +virtual void render(sf::RenderWindow& window) override;
+    +virtual void pause() override {};
+    +virtual void resume() override {};
+    +virtual void exit() override {};
+    
+    -sf::Sprite m_background;
+...
+}
+
+class PauseMenuState
+{
+  +PauseMenuState();
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) override;
+    +virtual void update(float deltaTime) override;
+    +virtual void render(sf::RenderWindow& window) override;
+    +virtual void pause() override {};
+...
+}
+
+class LoadingState
+{
+  +LoadingState();
+	+virtual void handleInput(const sf::Event&, const sf::Vector2f&) override {};
+	+virtual void update(float deltaTime) override;
+	+virtual void render(sf::RenderWindow& window) override;
+	+virtual void pause() override {};
+...
+}
+
+class GameOverState
+{
+  +GameOverState();
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) override;
+    +virtual void update(float) override {};
+    +virtual void render(sf::RenderWindow& window) override;
+    +virtual void pause() override {};
+    +virtual void resume() override {};
+    +virtual void exit() override {};
+...
+}
+
+class GameWinState
+{
+    +GameWinState();
+    +virtual void handleInput(const sf::Event& event, const sf::Vector2f& mousePos) override;
+    +virtual void update(float) override {};
+    +virtual void render(sf::RenderWindow& window) override;
+    +virtual void pause() override {};
+    +virtual void resume() override {};
+    +virtual void exit() override {};
+    ...
+}
+
+class ContactListener
+{
+  +virtual void BeginContact(b2Contact* contact) override;
+	+virtual void EndContact(b2Contact* contact) override;
+}
+
+struct UnknownCollision
+{
+  +UnknownCollision(GameObject& a, GameObject& b)
+}
+
+class GameObject
+{
+  +GameObject(const sf::Texture& texture, const sf::Vector2f& position);
+	+GameObject(const sf::Sprite& texture, const sf::Vector2f& position);
+	+GameObject(const sf::Sprite& texture);
+	+GameObject(const sf::Vector2f& position);
+	+virtual ~GameObject() = default;
+...
+}
+
+class StaticObject
+{
+  +StaticObject(const sf::Texture& texture, const sf::Vector2f& position, bool hasPhysics);
+    +StaticObject(const sf::Sprite& texture, const sf::Vector2f& position, bool hasPhysics);
+    +StaticObject(const sf::Vector2f& position, bool hasPhysics);
+    +virtual void update(float) override;
+    +virtual void render(sf::RenderWindow& window) const override;
+    +b2Body* getBody() const;
+    +bool hasPhysics() const;
+    ...
+}
+
+class Spikes
+{
+  +Spikes(const sf::Sprite& texture, const sf::Vector2f& position, b2World* world);
+	+size_t getDamage() const;
+	
+	-size_t m_damage = SPIKE_DAMAGE;
+}
+
+class Barrel
+{
+  +Barrel(const sf::Sprite& texture, const sf::Vector2f& position, b2World* world);
+}
+
+class ChainedObject
+{
+  +ChainedObject(const sf::Vector2f& position, b2World* world);
+	+virtual void update(float delta) override;
+	+void createChain(const sf::Vector2f& startPos, const sf::Vector2f& endPos, const Shape& shape);
+	+const b2Vec2* getVertices() const;
+	+int32 getVerticesAmount() const;
+	
+	-b2ChainShape m_chainShape;
+}
+
+class Decoration
+{
+  +Decoration(const sf::Sprite& texture, const sf::Vector2f& position);
+}
+
+class FinishLine
+{
+  +FinishLine(const sf::Vector2f& position, b2World* world);
+	+virtual void update(float) override {};
+	+virtual void render(sf::RenderWindow&) const override {};
+}
+
+class MovingObject
+{
+  +MovingObject(const sf::Sprite& sprite, float velocity, b2World* world);
+    +MovingObject(const sf::Sprite& sprite, const sf::Vector2f position, float velocity);
+    +MovingObject(const sf::Texture& texture, const sf::Vector2f& position, float velocity, b2World* world);
+    +MovingObject(const sf::Texture& texture, const sf::Vector2f& position, float velocity);
+    +MovingObject(const sf::Vector2f& position, float velocity);
+    +virtual void render(sf::RenderWindow& window) const override;
+...
+}
+
+class Drop
+{
+  +Drop(const sf::Sprite& texture, const sf::Vector2f& position, float interval, float velocity, b2World* world);
+	+virtual void update(float deltaTime) override;
+	+void remove();
+	+bool needRemove() const;
+	
+	-float m_elapsedTime{};
+	-float m_interval;
+	-bool m_remove = false;
+}
+
+enum Operation
+{
+    Run, Jump, Stay, Falling, Attack, Hurt, Die, Max
+}
+
+enum Direction
+{
+    Left, Right, Up, Down, Max
+}
+
+class MovingPlatform
+{
+  +MovingPlatform(const sf::Texture& texture, const sf::Vector2f& position, float interval, float velocity);
+	+virtual void update(float deltaTime) override;
+
+	+const b2Vec2* getVertices() const;
+	+int32 getVerticesAmount() const;
+	
+	#b2ChainShape m_chainShape;
+	#float m_elapsedTime{};
+	#float m_interval;
+}
+
+class ElevatorPlatform
+{
+  +ElevatorPlatform(const sf::Texture& texture, const sf::Vector2f& position, const Direction& direction, float interval, float velocity, b2World* world);
+}
+
+class SidePlatform
+{
+  +SidePlatform(const sf::Texture& texture, const sf::Vector2f& position, float interval, float velocity, const Direction& direction, b2World* world);
+}
+
+class MovingCharacter
+{
+  +MovingCharacter(const std::vector<sf::Sprite>& animation, float interval, float velocity, float yOffset, b2World* world, size_t health);
+	+virtual void update(float deltaTime) override;
+	+virtual void render(sf::RenderWindow& window) const override;
+	+virtual void attack(float deltaTime) = 0;
+	+virtual void setVolume() = 0;
+
+	+Animation& getAnimation();
+	+const Operation& getOperation() const;
+	+void setOperation(const Operation& operation);
+	+float getJumpForce() const;
+	+bool isOnGround() const;
+...
+}
+
+class Player
+{
+  +Player(const std::vector<sf::Sprite>& animation, float interval, const sf::Vector2f& position, float velocity, b2World* world);
+	+void attack(float deltaTime);
+	+virtual void update(float deltaTime) override;
+	+bool isHurt() const;
+	+void setHurt(size_t damage);
+	+sf::Vector2f getPosition() const;
+	+void setVolume() override;
+	+void eat();
+	+void touchFinishLine();
+	+bool isTouchedFinishLine() const;
+...
+}
+
+class Mob
+{
+  +Mob(const std::vector<sf::Sprite>& animation, float interval, float velocity, b2World* world, const sf::SoundBuffer& attackSound, const WeaponType& weaponType, float yOffset, float damage, float attackCooldown, size_t health);
+	+virtual void render(sf::RenderWindow& window) const override;
+	+virtual void attack(float deltaTime) override;
+	+void setPlayerPosition(const b2Vec2& pos);
+	+const sf::Vector2f getPlayersPosition() const;
+	+void setHurt(size_t damage, const std::vector<sf::Sprite>& animation);
+	
+	#using Objects = std::vector<std::unique_ptr<GameObject>>;
+	#Objects m_weaponProjectile;
+...
+}
+
+class SkeletonMelee
+{
+  +SkeletonMelee(const std::vector<sf::Sprite>& animation, float interval, const sf::Vector2f& position, float velocity, b2World* world);
+	+virtual void update(float delta) override;
+	+virtual void setVolume() override;
+	
+	-float m_hurtElapsedTime{};
+	-sf::Sound m_death;
+	-sf::Sound m_hurt;
+	-bool m_hurtPlayed = false;
+	-bool m_deathPlayed = false;
+}
+
+class SkeletonRanged
+{
+  +SkeletonRanged(const std::vector<sf::Sprite>& animation, float interval, const sf::Vector2f& position, float velocity, b2World* world);
+	+virtual void update(float delta) override;
+	+virtual void setVolume() override;
+	
+	-float m_hurtElapsedTime{};
+	-sf::Sound m_death;
+	-sf::Sound m_hurt;
+	-bool m_hurtPlayed = false;
+	-bool m_deathPlayed = false;
+}
+
+class MobState
+{
+  +virtual ~MobState() = default;
+  +virtual void update(Mob& mob, float deltaTime) = 0;
+  
+  #Direction m_currDirection = Direction::Right;
+}
+
+class RoamingState
+{
+    +RoamingState(float directionChangeInterval, const std::function<void(Mob&)>& animationStay, const std::function<void(Mob&)>& animationWalk);
+    +void update(Mob& mob, float deltaTime) override;
+    
+    -float m_timer = 0.f;
+    -float m_directionChangeInterval;
+    -std::function<void(Mob&)> m_animationStay;
+    -std::function<void(Mob&)> m_animationWalk;
+
+    -Operation generateNewOperation();
+}
+
+class ChasingState
+{
+  +ChasingState(const std::function<void(Mob&)>& animationWalk);
+  +void update(Mob& mob, float deltaTime) override;
+  
+  -float m_startWalking{0.f};
+  -std::function<void(Mob&)> m_animationWalk;
+}
+
+class AttackingState
+{
+  +AttackingState(float attackCooldown, const std::function<void(Mob&)>& animationStay, const std::function<void(Mob&)>& animationAttack);
+  +void update(Mob& mob, float deltaTime) override;
+  
+  -float m_elapsedTime{0.4f};
+  -bool m_attacked = false;
+  -float m_attackCooldown;
+  -std::function<void(Mob&)> m_animationIdle;
+  -std::function<void(Mob&)> m_animationAttack;
+}
+
+class Weapon
+{
+  +Weapon(const sf::Sprite& sprite, const sf::Vector2f& position, float velocity, float lifeTime);
+	+Weapon(const sf::Vector2f& position, float velocity, float lifeTime);
+	+virtual void update(float deltaTime) override;
+	+virtual void render(sf::RenderWindow& window) const override;
+	+bool isHit() const;
+	+void setHit();
+	
+	-float m_lifeTime;
+	-float m_elapsedTime{};
+	-bool m_hit = false;
+}
+
+class Sword
+{
+  +Sword(const Direction& direction, const sf::Vector2f& position, b2World* world);
+}
+
+class Arrow
+{
+  +Arrow(const sf::Sprite& sprite, const Direction& direction, const sf::Vector2f& position, b2World* world);
+}
+
+GameState <|-- MainMenuState
+GameState <|-- GameplayState
+GameState <|-- PauseMenuState
+GameState <|-- SettingsState
+GameState <|-- GameOverState
+GameState <|-- GameWinState
+GameState <|-- LoadingState
+GameObject <|-- StaticObject
+StaticObject <|-- Spikes
+StaticObject <|-- Barrel
+StaticObject <|-- ChainedObject
+StaticObject <|-- Decoration
+StaticObject <|-- FinishLine
+GameObject <|-- MovingObject
+MovingObject <|-- MovingCharacter
+MovingObject <|-- Drop
+MovingObject <|-- MovingPlatform
+MovingObject <|-- Weapon
+Weapon <|-- Sword
+Weapon <|-- Arrow
+MovingPlatform <|-- ElevatorPlatform
+MovingPlatform <|-- SidePlatform
+MovingCharacter <|-- Mob
+MovingCharacter <|-- Player
+Mob <|-- SkeletonMelee
+Mob <|-- SkeletonRanged
+b2ContactListener <|-- ContactListener
+runtime <|-- UnknownCollision
+MobState <|-- RoamingState
+MobState <|-- ChasingState
+MobState <|-- AttackingState
+
+@enduml
