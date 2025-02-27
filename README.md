@@ -57,11 +57,6 @@ The game follows a structured object-oriented design. The main components includ
 - **Space** - Jump
 - **Escape** - Pause/Quit
 
-## Future Improvements
-- Adding more levels and enemies.
-- Enhancing AI for enemy behaviors.
-- Implementing a saving/loading system for custom levels.
-
 ## Credits
 - **Developer:** David Zaydenberg
 - **Libraries:** SFML, Box2D
